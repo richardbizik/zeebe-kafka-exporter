@@ -72,9 +72,9 @@ public final class KafkaExporter implements Exporter {
     context.setFilter(new KafkaRecordFilter(config.getRecords()));
 
     if (logger.isDebugEnabled()) {
-      logger.debug("Configured Kafka exporter: {}", config);
+      logger.debug("Configured Kafka custom exporter: {}", config);
     } else {
-      logger.info("Configured Kafka exporter");
+      logger.info("Configured Kafka custom exporter");
     }
   }
 
@@ -88,9 +88,9 @@ public final class KafkaExporter implements Exporter {
     scheduleFlushBatchTask();
 
     if (logger.isDebugEnabled()) {
-      logger.debug("Opened Kafka exporter with configuration: {}", config);
+      logger.debug("Opened Kafka custom exporter with configuration: {}", config);
     } else {
-      logger.info("Opened Kafka exporter");
+      logger.info("Opened Kafka custom exporter");
     }
   }
 

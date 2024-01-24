@@ -62,7 +62,7 @@ final class DefaultKafkaProducerFactory implements KafkaProducerFactory {
 
     // wait up to 10ms or until the batch is full before sending
     options.put(ProducerConfig.LINGER_MS_CONFIG, 10L);
-    options.put(ProducerConfig.BATCH_SIZE_CONFIG, 4 * 1024 * 1024L);
+    options.put(ProducerConfig.BATCH_SIZE_CONFIG, 4 * 1024 * 1024);
     options.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, config.getMaxBlockingTimeout().toMillis());
 
     // leave always close to the last step to allow user configuration to override producer options
