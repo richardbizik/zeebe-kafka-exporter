@@ -42,14 +42,21 @@ final class RawProducerConfigParserTest {
     // then
     assertThat(parsed)
         .extracting(
-            "servers", "clientId", "closeTimeout", "requestTimeout", "maxBlockingTimeout", "config")
+            "servers",
+            "clientId",
+            "closeTimeout",
+            "requestTimeout",
+            "maxBlockingTimeout",
+            "config",
+            "transactionIdPrefix")
         .containsExactly(
             RawProducerConfigParser.DEFAULT_SERVERS,
             RawProducerConfigParser.DEFAULT_CLIENT_ID,
             RawProducerConfigParser.DEFAULT_CLOSE_TIMEOUT,
             RawProducerConfigParser.DEFAULT_REQUEST_TIMEOUT,
             RawProducerConfigParser.DEFAULT_MAX_BLOCKING_TIMEOUT,
-            new HashMap<>());
+            new HashMap<>(),
+            RawProducerConfigParser.DEFAULT_CLIENT_ID);
   }
 
   @Test
@@ -62,6 +69,7 @@ final class RawProducerConfigParserTest {
     config.requestTimeoutMs = 3000L;
     config.maxBlockingTimeoutMs = 5000L;
     config.config = "linger.ms=5\nmax.buffer.count=2";
+    config.transactionIdPrefix = "zeebe-0";
 
     // when
     final ProducerConfig parsed = parser.parse(config);
@@ -69,13 +77,20 @@ final class RawProducerConfigParserTest {
     // then
     assertThat(parsed)
         .extracting(
-            "servers", "clientId", "closeTimeout", "requestTimeout", "maxBlockingTimeout", "config")
+            "servers",
+            "clientId",
+            "closeTimeout",
+            "requestTimeout",
+            "maxBlockingTimeout",
+            "config",
+            "transactionIdPrefix")
         .containsExactly(
             Collections.singletonList("localhost:3000"),
             "client",
             Duration.ofSeconds(3),
             Duration.ofSeconds(3),
             Duration.ofSeconds(5),
-            Map.of("linger.ms", "5", "max.buffer.count", "2"));
+            Map.of("linger.ms", "5", "max.buffer.count", "2"),
+            "zeebe-0");
   }
 }

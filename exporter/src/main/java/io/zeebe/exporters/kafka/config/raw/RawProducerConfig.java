@@ -69,4 +69,7 @@ public final class RawProducerConfig {
    * @see org.apache.kafka.clients.producer.ProducerConfig#BOOTSTRAP_SERVERS_CONFIG
    */
   public String servers;
+
+  /** transaction id prefix for a producer. */
+  public String transactionIdPrefix;
 }

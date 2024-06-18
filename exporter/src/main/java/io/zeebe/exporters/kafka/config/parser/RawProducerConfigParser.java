@@ -61,9 +61,16 @@ public class RawProducerConfigParser implements ConfigParser<RawProducerConfig, 
         get(config.maxBlockingTimeoutMs, DEFAULT_MAX_BLOCKING_TIMEOUT, Duration::ofMillis);
     final Map<String, Object> producerConfig =
         get(config.config, new HashMap<>(), this::parseProperties);
+    final String transactionIdPrefix = get(config.transactionIdPrefix, DEFAULT_CLIENT_ID);
 
     return new ProducerConfig(
-        clientId, closeTimeout, producerConfig, requestTimeout, maxBlockingTimeout, servers);
+        clientId,
+        closeTimeout,
+        producerConfig,
+        requestTimeout,
+        maxBlockingTimeout,
+        servers,
+        transactionIdPrefix);
   }
 
   private Map<String, Object> parseProperties(final String propertiesString) {

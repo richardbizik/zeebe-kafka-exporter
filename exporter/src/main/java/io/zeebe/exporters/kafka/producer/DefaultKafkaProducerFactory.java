@@ -45,7 +45,10 @@ final class DefaultKafkaProducerFactory implements KafkaProducerFactory {
     final var options = new HashMap<String, Object>();
     final var clientId = String.format("%s-%s", config.getClientId(), producerId);
 
-    options.put(ProducerConfig.TRANSACTIONAL_ID_CONFIG, producerId);
+    final var transactionalId =
+        String.format("%s-%d", config.getClientId(), System.currentTimeMillis());
+
+    options.put(ProducerConfig.TRANSACTIONAL_ID_CONFIG, transactionalId);
     options.put(ProducerConfig.CLIENT_ID_CONFIG, clientId);
     options.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true);
 

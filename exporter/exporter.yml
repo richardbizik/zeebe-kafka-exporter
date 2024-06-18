@@ -50,6 +50,8 @@ zeebe:
             closeTimeoutMs: 5000
             # Producer client identifier
             clientId: zeebe
+            # transaction prefix for producer...transactionId will be in format: <transactionIdPrefix>_<current_millis>
+            transactionIdPrefix: zeebe-0
 
             # Any setting under the following section will be passed verbatim to
             # ProducerConfig; you can use this to configure authentication, compression,

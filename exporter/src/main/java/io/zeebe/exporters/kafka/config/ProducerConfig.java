@@ -38,6 +38,7 @@ public final class ProducerConfig {
   private final Duration requestTimeout;
   private final Duration maxBlockingTimeout;
   private final List<String> servers;
+  private final String transactionIdPrefix;
 
   public ProducerConfig(
       final String clientId,
@@ -45,13 +46,15 @@ public final class ProducerConfig {
       final Map<String, Object> config,
       final Duration requestTimeout,
       final Duration maxBlockingTimeout,
-      final List<String> servers) {
+      final List<String> servers,
+      final String transactionIdPrefix) {
     this.clientId = Objects.requireNonNull(clientId);
     this.closeTimeout = Objects.requireNonNull(closeTimeout);
     this.config = Objects.requireNonNull(config);
     this.requestTimeout = Objects.requireNonNull(requestTimeout);
     this.maxBlockingTimeout = Objects.requireNonNull(maxBlockingTimeout);
     this.servers = Objects.requireNonNull(servers);
+    this.transactionIdPrefix = Objects.requireNonNull(transactionIdPrefix);
   }
 
   public String getClientId() {
@@ -78,10 +81,20 @@ public final class ProducerConfig {
     return servers;
   }
 
+  public String getTransactionIdPrefix() {
+    return transactionIdPrefix;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(
-        clientId, closeTimeout, config, requestTimeout, maxBlockingTimeout, servers);
+        clientId,
+        closeTimeout,
+        config,
+        requestTimeout,
+        maxBlockingTimeout,
+        servers,
+        transactionIdPrefix);
   }
 
   @Override
@@ -98,7 +111,8 @@ public final class ProducerConfig {
         && Objects.equals(getConfig(), that.getConfig())
         && Objects.equals(getRequestTimeout(), that.getRequestTimeout())
         && Objects.equals(getMaxBlockingTimeout(), that.getMaxBlockingTimeout())
-        && Objects.equals(getServers(), that.getServers());
+        && Objects.equals(getServers(), that.getServers())
+        && Objects.equals(getTransactionIdPrefix(), that.getTransactionIdPrefix());
   }
 
   @Override
@@ -117,6 +131,8 @@ public final class ProducerConfig {
         + maxBlockingTimeout
         + ", servers="
         + servers
+        + ", transactionIdPrefix="
+        + transactionIdPrefix
         + '}';
   }
 }
