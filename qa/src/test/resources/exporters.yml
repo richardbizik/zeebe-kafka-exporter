@@ -14,6 +14,7 @@ zeebe:
           inFlightRecordCheckIntervalMs: 1000
 
           producer:
+            transactionIdPrefix: zeebe-0
             requestTimeoutMs: 5000
             closeTimeoutMs: 5000
             clientId: zeebe
