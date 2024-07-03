@@ -45,7 +45,7 @@ final class DefaultKafkaProducerFactory implements KafkaProducerFactory {
     final var options = new HashMap<String, Object>();
     final var clientId = String.format("%s-%s", config.getClientId(), producerId);
 
-    final int randomValue = (int) ((Math.random() * (99999 - 1)) +1);
+    final int randomValue = (int) ((Math.random() * (99999 - 1)) + 1);
     final var transactionalId =
         String.format("%s-%d", config.getTransactionIdPrefix(), randomValue);
 
