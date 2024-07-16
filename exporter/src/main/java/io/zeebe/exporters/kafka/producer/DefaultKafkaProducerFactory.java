@@ -48,7 +48,7 @@ final class DefaultKafkaProducerFactory implements KafkaProducerFactory {
     final var clientId = String.format("%s-%s", config.getClientId(), producerId);
 
     final var transactionalId =
-        String.format("%s-%s-%s-%d", config.getTransactionIdPrefix(), config.getClientId(), producerId, partitionId);
+        String.format("%s-%s-%d", config.getTransactionIdPrefix(), config.getClientId(), partitionId);
 
     options.put(ProducerConfig.TRANSACTIONAL_ID_CONFIG, transactionalId);
     options.put(ProducerConfig.CLIENT_ID_CONFIG, clientId);
