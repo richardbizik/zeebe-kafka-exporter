@@ -44,11 +44,11 @@ public enum AllowedType {
   }
 
   public static AllowedType forName(final String name) {
-    if (COMMAND.typeName.equals(name)) {
+    if (COMMAND.typeName.equalsIgnoreCase(name)) {
       return COMMAND;
-    } else if (EVENT.typeName.equals(name)) {
+    } else if (EVENT.typeName.equalsIgnoreCase(name)) {
       return EVENT;
-    } else if (REJECTION.typeName.equals(name)) {
+    } else if (REJECTION.typeName.equalsIgnoreCase(name)) {
       return REJECTION;
     } else {
       throw new IllegalArgumentException("Unknown record type name: " + name);

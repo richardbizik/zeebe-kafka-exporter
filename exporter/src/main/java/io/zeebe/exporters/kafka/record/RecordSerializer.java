@@ -15,25 +15,29 @@
  */
 package io.zeebe.exporters.kafka.record;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.Record;
 import java.util.Map;
+import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.Serializer;
-import org.apache.kafka.common.serialization.StringSerializer;
 
 /**
  * A {@link Serializer} implementations for {@link Record} objects, which first uses a wrapped
- * {@link StringSerializer} to serialize {@link Record} to JSON. You can specify your encoding of
- * preference via {@link StringSerializer} configuration. Any configuration given to this serializer
- * is also passed to the wrapped {@link StringSerializer}.
+ * {@link ByteArraySerializer} to serialize {@link Record} to JSON. You can specify your encoding of
+ * preference via {@link ByteArraySerializer} configuration. Any configuration given to this serializer
+ * is also passed to the wrapped {@link ByteArraySerializer}.
  */
 public final class RecordSerializer implements Serializer<Record<?>> {
-  private final StringSerializer delegate;
+  private final ByteArraySerializer delegate;
+  private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new ZeebeProtocolModule());
 
   public RecordSerializer() {
-    this(new StringSerializer());
+    this(new ByteArraySerializer());
   }
 
-  public RecordSerializer(final StringSerializer delegate) {
+  public RecordSerializer(final ByteArraySerializer delegate) {
     this.delegate = delegate;
   }
 
@@ -44,7 +48,14 @@ public final class RecordSerializer implements Serializer<Record<?>> {
 
   @Override
   public byte[] serialize(final String topic, final Record data) {
-    return delegate.serialize(topic, data.toJson());
+    final byte[] bytes;
+    try {
+      bytes = objectMapper.writeValueAsBytes(data);
+    } catch (JsonProcessingException e) {
+      e.printStackTrace();
+      throw new RuntimeException("failed to serialize data");
+    }
+    return delegate.serialize(topic, bytes);
   }
 
   @Override

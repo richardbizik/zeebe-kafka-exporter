@@ -32,6 +32,7 @@ public class MockKafkaProducerFactory implements KafkaProducerFactory {
   public Supplier<MockProducer<RecordId, byte[]>> mockProducerSupplier;
   public MockProducer<RecordId, byte[]> mockProducer;
   public String producerId;
+  public int partitionId;
 
   public MockKafkaProducerFactory(
       final Supplier<MockProducer<RecordId, byte[]>> mockProducerSupplier) {
@@ -40,8 +41,9 @@ public class MockKafkaProducerFactory implements KafkaProducerFactory {
 
   @Override
   public Producer<RecordId, byte[]> newProducer(
-      final ProducerConfig config, final String producerId) {
+      final ProducerConfig config, final int partitionId, final String producerId) {
     this.producerId = Objects.requireNonNull(producerId);
+    this.partitionId = Objects.requireNonNull(partitionId);
     if (mockProducer == null || mockProducer.closed()) {
       mockProducer = mockProducerSupplier.get();
     }

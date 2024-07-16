@@ -112,4 +112,22 @@ public final class RawRecordsConfig {
    * io.camunda.zeebe.protocol.record.ValueType#VARIABLE_DOCUMENT}
    */
   public RawRecordConfig variableDocument;
+
+  public RawRecordConfig decision;
+  public RawRecordConfig decisionRequirements;
+  public RawRecordConfig decisionEvaluation;
+  public RawRecordConfig processInstanceModification;
+  public RawRecordConfig escalation;
+  public RawRecordConfig signalSubscription;
+  public RawRecordConfig signal;
+  public RawRecordConfig resourceDeletion;
+  public RawRecordConfig commandDistribution;
+  public RawRecordConfig processInstanceBatch;
+  public RawRecordConfig messageBatch;
+  public RawRecordConfig form;
+  public RawRecordConfig userTask;
+  public RawRecordConfig processInstanceMigration;
+  public RawRecordConfig compensationSubscription;
+  public RawRecordConfig checkpoint;
+
 }

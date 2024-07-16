@@ -41,13 +41,14 @@ import org.apache.kafka.common.serialization.ByteArraySerializer;
 final class DefaultKafkaProducerFactory implements KafkaProducerFactory {
   @Override
   public Producer<RecordId, byte[]> newProducer(
-      final io.zeebe.exporters.kafka.config.ProducerConfig config, final String producerId) {
+      final io.zeebe.exporters.kafka.config.ProducerConfig config,
+      final int partitionId,
+      final String producerId) {
     final var options = new HashMap<String, Object>();
     final var clientId = String.format("%s-%s", config.getClientId(), producerId);
 
-    final int randomValue = (int) ((Math.random() * (99999 - 1)) + 1);
     final var transactionalId =
-        String.format("%s-%d", config.getTransactionIdPrefix(), randomValue);
+        String.format("%s-%s-%s-%d", config.getTransactionIdPrefix(), config.getClientId(), producerId, partitionId);
 
     options.put(ProducerConfig.TRANSACTIONAL_ID_CONFIG, transactionalId);
     options.put(ProducerConfig.CLIENT_ID_CONFIG, clientId);

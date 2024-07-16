@@ -115,3 +115,20 @@ zeebe:
             timer: { topic: zeebe-timer }
             # For records with a value of type VARIABLE
             variable: { topic: zeebe-variable }
+            decision: { topic: decision}
+            decisionRequirements: { topic: decision-requirements}
+            decisionEvaluation: { topic: decision-evaluation}
+            processInstanceModification: { topic: process-instance-modification}
+            escalation: { topic: escalation}
+            signalSubscription: { topic: signal-subscription}
+            signal: { topic: signal}
+            resourceDeletion: { topic: resource-deletion}
+            commandDistribution: { topic: command-distribution}
+            processInstanceBatch: { topic: process-instance-batch}
+            messageBatch: { topic: message-batch}
+            form: { topic: form}
+            userTask: { topic: user-task}
+            processInstanceMigration: { topic: process-instance-migration}
+            compensationSubscription: { topic: compensation-subscription}
+            checkpoint: { topic: checkpoint}
+

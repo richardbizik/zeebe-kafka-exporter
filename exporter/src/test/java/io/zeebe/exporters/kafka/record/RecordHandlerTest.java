@@ -17,17 +17,19 @@ package io.zeebe.exporters.kafka.record;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.protocol.jackson.record.DeploymentRecordValueBuilder;
-import io.camunda.zeebe.protocol.jackson.record.RecordBuilder;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableDeploymentRecordValue;
+import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.zeebe.exporters.kafka.config.RecordConfig;
 import io.zeebe.exporters.kafka.config.RecordsConfig;
 import io.zeebe.exporters.kafka.serde.RecordId;
-import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
 import java.util.Map;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -40,12 +42,15 @@ final class RecordHandlerTest {
 
   private static final RecordConfig DEFAULT_RECORD_CONFIG =
       new RecordConfig(EnumSet.allOf(RecordType.class), "zeebe");
+  private final ProtocolFactory recordFactory = new ProtocolFactory();
+
+  private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new ZeebeProtocolModule());
 
   @Test
-  void shouldTransformRecord() {
+  void shouldTransformRecord() throws JsonProcessingException {
     // given
     final Record<DeploymentRecordValue> record =
-        buildDeploymentRecord().recordType(RecordType.COMMAND).build();
+        createDeploymentRecord(RecordType.COMMAND);
     final RecordConfig deploymentRecordConfig =
         new RecordConfig(EnumSet.allOf(RecordType.class), "topic");
     final RecordHandler recordHandler = new RecordHandler(newRecordsConfig(RecordType.COMMAND));
@@ -57,14 +62,15 @@ final class RecordHandlerTest {
     assertThat(transformed.topic()).isEqualTo(deploymentRecordConfig.getTopic());
     assertThat(transformed.key())
         .isEqualTo(new RecordId(record.getPartitionId(), record.getPosition()));
-    assertThat(transformed.value()).isEqualTo(record.toJson().getBytes(StandardCharsets.UTF_8));
+    final var recordBytes = objectMapper.writeValueAsBytes(record);
+    assertThat(transformed.value()).isEqualTo(recordBytes);
   }
 
   @Test
   void shouldTestRecordAsNotAllowed() {
     // given
     final Record<DeploymentRecordValue> record =
-        buildDeploymentRecord().recordType(RecordType.COMMAND).build();
+        createDeploymentRecord(RecordType.COMMAND);
     final RecordHandler recordHandler = new RecordHandler(newRecordsConfig(RecordType.EVENT));
 
     // when - then
@@ -75,7 +81,7 @@ final class RecordHandlerTest {
   void shouldTestRecordAsAllowed() {
     // given
     final Record<DeploymentRecordValue> record =
-        buildDeploymentRecord().recordType(RecordType.EVENT).build();
+        createDeploymentRecord(RecordType.EVENT);
     final RecordHandler recordHandler = new RecordHandler(newRecordsConfig(RecordType.EVENT));
 
     // when - then
@@ -87,14 +93,13 @@ final class RecordHandlerTest {
     return new RecordsConfig(Map.of(ValueType.DEPLOYMENT, recordConfig), DEFAULT_RECORD_CONFIG);
   }
 
-  private RecordBuilder<DeploymentRecordValue> buildDeploymentRecord() {
-    return new RecordBuilder<DeploymentRecordValue>()
-        .valueType(ValueType.DEPLOYMENT)
-        .recordType(RecordType.EVENT)
-        .timestamp(System.currentTimeMillis())
-        .intent(DeploymentIntent.CREATE)
-        .value(new DeploymentRecordValueBuilder().build())
-        .partitionId(1)
-        .position(1);
+  private Record<DeploymentRecordValue> createDeploymentRecord(final RecordType rt) {
+    return recordFactory.generateRecord(ValueType.DEPLOYMENT,
+        builder -> builder
+        .withRecordType(rt)
+        .withTimestamp(System.currentTimeMillis())
+        .withIntent(DeploymentIntent.CREATE)
+        .withValue(ImmutableDeploymentRecordValue.builder().build())
+        .withPartitionId(1));
   }
 }

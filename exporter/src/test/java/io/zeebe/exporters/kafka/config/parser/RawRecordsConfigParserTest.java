@@ -72,13 +72,29 @@ final class RawRecordsConfigParserTest {
     config.timer = newConfigFromType(ValueType.TIMER);
     config.variable = newConfigFromType(ValueType.VARIABLE);
     config.variableDocument = newConfigFromType(ValueType.VARIABLE_DOCUMENT);
+    config.decision = newConfigFromType(ValueType.DECISION);
+    config.decisionRequirements = newConfigFromType(ValueType.DECISION_REQUIREMENTS);
+    config.decisionEvaluation = newConfigFromType(ValueType.DECISION_EVALUATION);
+    config.processInstanceModification = newConfigFromType(ValueType.PROCESS_INSTANCE_MODIFICATION);
+    config.escalation = newConfigFromType(ValueType.ESCALATION);
+    config.signalSubscription = newConfigFromType(ValueType.SIGNAL_SUBSCRIPTION);
+    config.signal = newConfigFromType(ValueType.SIGNAL);
+    config.resourceDeletion = newConfigFromType(ValueType.RESOURCE_DELETION);
+    config.commandDistribution = newConfigFromType(ValueType.COMMAND_DISTRIBUTION);
+    config.processInstanceBatch = newConfigFromType(ValueType.PROCESS_INSTANCE_BATCH);
+    config.messageBatch = newConfigFromType(ValueType.MESSAGE_BATCH);
+    config.form = newConfigFromType(ValueType.FORM);
+    config.userTask = newConfigFromType(ValueType.USER_TASK);
+    config.processInstanceMigration = newConfigFromType(ValueType.PROCESS_INSTANCE_MIGRATION);
+    config.compensationSubscription = newConfigFromType(ValueType.COMPENSATION_SUBSCRIPTION);
+    config.checkpoint = newConfigFromType(ValueType.CHECKPOINT);
 
     // when
     final RecordsConfig parsed = parser.parse(config);
 
     // then
     for (final ValueType type : EXPECTED_VALUE_TYPES) {
-      assertThat(parsed.forType(type).getTopic()).isEqualTo(type.name());
+      assertThat(parsed.forType(type).getTopic()).as("check if type: %s is equal to %s", type.name(), parsed.forType(type).getTopic()).isEqualTo(type.name());
     }
   }
 

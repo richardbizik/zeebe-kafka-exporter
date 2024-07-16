@@ -32,13 +32,14 @@ public interface RecordBatchFactory {
 
   RecordBatch newRecordBatch(
       final ProducerConfig config,
+      final int partitionId,
       final int maxBatchSize,
       final LongConsumer onFlushCallback,
       final Logger logger);
 
   static RecordBatchFactory defaultFactory() {
-    return (config, maxBatchSize, onFlushCallback, logger) ->
+    return (config, partitionId, maxBatchSize, onFlushCallback, logger) ->
         new BoundedTransactionalRecordBatch(
-            config, maxBatchSize, onFlushCallback, logger, KafkaProducerFactory.defaultFactory());
+            config, partitionId, maxBatchSize, onFlushCallback, logger, KafkaProducerFactory.defaultFactory());
   }
 }

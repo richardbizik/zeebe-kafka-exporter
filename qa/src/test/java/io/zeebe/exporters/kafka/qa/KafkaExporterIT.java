@@ -18,8 +18,18 @@ package io.zeebe.exporters.kafka.qa;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
+import io.camunda.zeebe.exporter.test.ExporterTestContext;
+import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.Record;
-import io.zeebe.containers.ZeebeContainer;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import io.zeebe.exporters.kafka.KafkaExporter;
+import io.zeebe.exporters.kafka.config.Config;
+import io.zeebe.exporters.kafka.config.ProducerConfig;
+import io.zeebe.exporters.kafka.config.RecordConfig;
+import io.zeebe.exporters.kafka.config.RecordsConfig;
 import io.zeebe.exporters.kafka.serde.RecordDeserializer;
 import io.zeebe.exporters.kafka.serde.RecordId;
 import io.zeebe.exporters.kafka.serde.RecordIdDeserializer;
@@ -28,6 +38,7 @@ import java.net.URL;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,10 +57,13 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.KafkaContainer;
@@ -75,34 +89,67 @@ final class KafkaExporterIT {
 
   private final Network network = Network.newNetwork();
   private KafkaContainer kafkaContainer = newKafkaContainer();
-  private final ZeebeContainer zeebeContainer = newZeebeContainer();
 
   private ZeebeClient zeebeClient;
   private DebugHttpExporterClient debugExporter;
 
-  @AfterEach
-  void tearDown() {
-    CloseHelper.quietCloseAll(zeebeClient, zeebeContainer, kafkaContainer, network);
+  private final ExporterTestController controller = new ExporterTestController();
+  private final ProtocolFactory factory = new ProtocolFactory();
+  private static final RecordConfig DEFAULT_RECORD_CONFIG =
+      new RecordConfig(EnumSet.allOf(RecordType.class), "zeebe");
+
+  private Config config;
+  private KafkaExporter exporter;
+  private ExporterTestContext exporterTestContext;
+
+  @BeforeAll
+  public void beforeAll() {
+    config =       new Config(
+          new ProducerConfig("client", Duration.ofSeconds(1), new HashMap<>(), Duration.ofSeconds(1), Duration.ofSeconds(1), List.of(kafkaContainer.getBootstrapServers()), "prefix"),
+          new RecordsConfig(new HashMap<>(), DEFAULT_RECORD_CONFIG),
+          100,
+          Duration.ofSeconds(1)
+          );
+    exporterTestContext =
+        new ExporterTestContext()
+            .setConfiguration(new ExporterTestConfiguration<>("kafka", config));
+    exporter.configure(exporterTestContext);
+    exporter.open(controller);
   }
 
-  @Test
-  void shouldExportToKafka() throws MalformedURLException {
+  @AfterEach
+  void tearDown() {
+    CloseHelper.quietCloseAll(zeebeClient, kafkaContainer, network);
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("io.camunda.zeebe.exporter.TestSupport#provideValueTypes")
+  void shouldExportRecord(final ValueType valueType) {
     // given
-    startKafka();
-    zeebeContainer.start();
-    final var sampleWorkload = newSampleWorkload();
+    final var record = factory.generateRecord(valueType);
 
     // when
-    sampleWorkload.execute();
+    export(record);
 
     // then
-    assertRecordsExported(sampleWorkload);
+    final var response = testClient.getExportedDocumentFor(record);
+    assertThat(response)
+        .extracting(GetResponse::index, GetResponse::id, GetResponse::routing, GetResponse::source)
+        .containsExactly(
+            indexRouter.indexFor(record),
+            indexRouter.idFor(record),
+            String.valueOf(record.getPartitionId()),
+            record);
   }
 
   @Test
   void shouldExportEvenIfKafkaStartedLater() throws MalformedURLException {
     // given
-    zeebeContainer.start();
+    exporterTestContext =
+        new ExporterTestContext()
+            .setConfiguration(new ExporterTestConfiguration<>("kafka", config));
+    exporter.configure(exporterTestContext);
+    exporter.open(controller);
     final var sampleWorkload = newSampleWorkload();
 
     // when
@@ -118,7 +165,11 @@ final class KafkaExporterIT {
       throws MalformedURLException, InterruptedException {
     // given
     startKafka();
-    zeebeContainer.start();
+    exporterTestContext =
+        new ExporterTestContext()
+            .setConfiguration(new ExporterTestConfiguration<>("kafka", config));
+    exporter.configure(exporterTestContext);
+    exporter.open(controller);
     final var sampleWorkload = newSampleWorkload();
 
     // when
@@ -138,8 +189,9 @@ final class KafkaExporterIT {
     assertRecordsExported(sampleWorkload);
   }
 
-  private SampleWorkload newSampleWorkload() throws MalformedURLException {
-    return new SampleWorkload(getLazyZeebeClient(), getLazyDebugExporter());
+  private boolean export(final Record<?> record) {
+    exporter.export(record);
+    return true;
   }
 
   /**
@@ -245,55 +297,6 @@ final class KafkaExporterIT {
         perPartitionRecords.sort(Comparator.comparing(ConsumerRecord::offset, Long::compareTo));
       }
     }
-  }
-
-  private ZeebeClient getLazyZeebeClient() {
-    if (zeebeClient == null) {
-      zeebeClient =
-          ZeebeClient.newClientBuilder()
-              .gatewayAddress(zeebeContainer.getExternalGatewayAddress())
-              .usePlaintext()
-              .build();
-    }
-
-    return zeebeClient;
-  }
-
-  private DebugHttpExporterClient getLazyDebugExporter() throws MalformedURLException {
-    if (debugExporter == null) {
-      final var exporterServerUrl =
-          new URL(String.format("http://%s/records.json", zeebeContainer.getExternalAddress(8000)));
-      debugExporter = new DebugHttpExporterClient((exporterServerUrl));
-    }
-
-    return debugExporter;
-  }
-
-  @SuppressWarnings("OctalInteger")
-  private ZeebeContainer newZeebeContainer() {
-    final var container = new ZeebeContainer();
-    final var exporterJar = MountableFile.forClasspathResource("zeebe-kafka-exporter.jar", 0775);
-    final var exporterConfig = MountableFile.forClasspathResource("exporters.yml", 0775);
-    final var loggingConfig = MountableFile.forClasspathResource("log4j2.xml", 0775);
-    final var networkAlias = "zeebe";
-    final var logConsumer = new Slf4jLogConsumer(newContainerLogger("zeebeContainer"), true);
-
-    container.addExposedPort(8000);
-    return container
-        .withNetwork(network)
-        .withNetworkAliases(networkAlias)
-        .withEnv("ZEEBE_BROKER_NETWORK_ADVERTISEDHOST", networkAlias)
-        .withEnv("ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT", "3")
-        .withEnv("ZEEBE_BROKER_EXPORTERS_KAFKA_ARGS_PRODUCER_SERVERS", "kafka:9092")
-        .withEnv("ZEEBE_LOG_LEVEL", "info")
-        .withEnv(
-            "LOG4J_CONFIGURATION_FILE",
-            "/usr/local/zeebe/config/log4j2.xml,/usr/local/zeebe/config/log4j2-exporter.xml")
-        .withCopyFileToContainer(exporterJar, "/usr/local/zeebe/exporters/zeebe-kafka-exporter.jar")
-        .withCopyFileToContainer(exporterConfig, "/usr/local/zeebe/config/exporters.yml")
-        .withCopyFileToContainer(loggingConfig, "/usr/local/zeebe/config/log4j2-exporter.xml")
-        .withEnv("SPRING_CONFIG_ADDITIONAL_LOCATION", "file:/usr/local/zeebe/config/exporters.yml")
-        .withLogConsumer(logConsumer);
   }
 
   private Consumer<RecordId, Record<?>> newConsumer() {

@@ -19,10 +19,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
+import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
+import io.camunda.zeebe.exporter.test.ExporterTestContext;
+import io.camunda.zeebe.exporter.test.ExporterTestController;
+import io.camunda.zeebe.protocol.record.ImmutableRecord;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.test.exporter.ExporterTestHarness;
-import io.camunda.zeebe.test.exporter.record.MockRecordMetadata;
+import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.zeebe.exporters.kafka.config.Config;
+import io.zeebe.exporters.kafka.config.parser.ConfigParser;
 import io.zeebe.exporters.kafka.config.parser.MockConfigParser;
 import io.zeebe.exporters.kafka.config.parser.RawConfigParser;
 import io.zeebe.exporters.kafka.config.raw.RawConfig;
@@ -31,6 +37,7 @@ import io.zeebe.exporters.kafka.config.raw.RawRecordsConfig;
 import io.zeebe.exporters.kafka.producer.RecordBatchStub;
 import io.zeebe.exporters.kafka.record.RecordHandler;
 import io.zeebe.exporters.kafka.serde.RecordId;
+import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.junit.jupiter.api.Test;
@@ -46,18 +53,27 @@ final class KafkaExporterTest {
   private final MockConfigParser<RawConfig, Config> mockConfigParser =
       new MockConfigParser<>(new RawConfigParser());
   private final RecordBatchStub.Factory batchStubFactory = new RecordBatchStub.Factory();
+  private final ExporterTestController controller = new ExporterTestController();
   private final KafkaExporter exporter = new KafkaExporter(batchStubFactory, mockConfigParser);
-  private final ExporterTestHarness testHarness = new ExporterTestHarness(exporter);
+  private final ExporterTestContext context =
+      new ExporterTestContext().setConfiguration(new ExporterTestConfiguration<>("test", rawConfig));
+
+  private final ProtocolFactory recordFactory = new ProtocolFactory();
 
   @Test
   void shouldAddRecordToBatchOnExport() throws Exception {
     // given
-    rawConfig.maxBatchSize = 5;
-    testHarness.configure(EXPORTER_ID, rawConfig);
-    testHarness.open();
-
+    rawConfig.maxBatchSize = 4;
+    exporter.configure(context);
+    exporter.open(controller);
+    final List<Record> records =
+          List.of(
+              newRecord(1, ValueType.PROCESS_INSTANCE),
+              newRecord(2, ValueType.PROCESS_INSTANCE),
+              newRecord(3, ValueType.PROCESS_INSTANCE),
+              newRecord(1, ValueType.PROCESS_INSTANCE));
     // when
-    final var records = testHarness.stream().export(5);
+    records.forEach(exporter::export);
 
     // then
     final var expectedIds =
@@ -76,13 +92,13 @@ final class KafkaExporterTest {
   @Test
   void shouldUseCorrectSerializer() throws Exception {
     // given
-    testHarness.configure(EXPORTER_ID, rawConfig);
-    testHarness.open();
+    exporter.configure(context);
+    exporter.open(controller);
     final var recordHandler = new RecordHandler(mockConfigParser.config.getRecords());
 
     // when
-    final var json = "{\"a\": 1}";
-    final var record = testHarness.export(r -> r.setJson(json));
+    final var record = recordFactory.generateRecord(ValueType.FORM);
+    exporter.export(record);
 
     // then
     final var expectedRecord = recordHandler.transform(record);
@@ -98,13 +114,15 @@ final class KafkaExporterTest {
     // given
     rawConfig.records = new RawRecordsConfig();
     rawConfig.records.deployment = new RawRecordConfig();
-    rawConfig.records.deployment.type = "";
-    testHarness.configure(EXPORTER_ID, rawConfig);
-    testHarness.open();
+    rawConfig.records.deployment.type = RecordType.COMMAND.toString();
+    mockConfigParser.forceParse(rawConfig);
+    final var context = new ExporterTestContext().setConfiguration(new ExporterTestConfiguration<>("test", rawConfig));
+    exporter.configure(context);
+    exporter.open(controller);
+    final var record = recordFactory.generateRecord(ValueType.DEPLOYMENT);
 
     // when
-    testHarness.export(
-        r -> r.setMetadata(new MockRecordMetadata().setValueType(ValueType.DEPLOYMENT)));
+    exporter.export(record);
 
     // then
     assertThat(batchStubFactory.stub.getPendingRecords())
@@ -116,11 +134,18 @@ final class KafkaExporterTest {
   void shouldFlushOnScheduledTask() throws Exception {
     // given
     rawConfig.maxBatchSize = 5;
-    testHarness.configure(EXPORTER_ID, rawConfig);
-    testHarness.open();
-
+    final var context = new ExporterTestContext().setConfiguration(new ExporterTestConfiguration<>("test", rawConfig));
+    exporter.configure(context);
+    exporter.open(controller);
+    final var records =
+          List.of(
+              recordFactory.generateRecord(ValueType.DEPLOYMENT),
+              recordFactory.generateRecord(ValueType.PROCESS_INSTANCE),
+              recordFactory.generateRecord(ValueType.DEPLOYMENT),
+              recordFactory.generateRecord(ValueType.PROCESS_INSTANCE),
+              recordFactory.generateRecord(ValueType.JOB));
     // when
-    final var records = testHarness.stream().export(5);
+    records.forEach(exporter::export);
     triggerFlushTask();
 
     // then
@@ -140,15 +165,21 @@ final class KafkaExporterTest {
   @Test
   void shouldUpdatePositionOnFlush() throws Exception {
     // given
-    testHarness.configure(EXPORTER_ID, rawConfig);
-    testHarness.open();
-
+    exporter.configure(context);
+    exporter.open(controller);
+    final var records =
+          List.of(
+              recordFactory.generateRecord(ValueType.DEPLOYMENT),
+              recordFactory.generateRecord(ValueType.PROCESS_INSTANCE),
+              recordFactory.generateRecord(ValueType.VARIABLE),
+              recordFactory.generateRecord(ValueType.PROCESS_INSTANCE),
+              recordFactory.generateRecord(ValueType.JOB));
     // when
-    final var records = testHarness.stream().export(5);
+    records.forEach(exporter::export);
     triggerFlushTask();
 
     // then
-    assertThat(testHarness.getLastUpdatedPosition())
+    assertThat(controller.getLastExportedRecordPosition())
         .as("position should be updated since after flush")
         .isEqualTo(records.get(4).getPosition());
   }
@@ -156,18 +187,21 @@ final class KafkaExporterTest {
   @Test
   void shouldRescheduleFlushTaskEvenOnException() throws Exception {
     // given
-    testHarness.configure(EXPORTER_ID, rawConfig);
-    testHarness.open();
-
+    exporter.configure(context);
+    exporter.open(controller);
+    final var records =
+          List.of(
+              recordFactory.generateRecord(ValueType.PROCESS_INSTANCE),
+              recordFactory.generateRecord(ValueType.JOB));
     // when
-    final var records = testHarness.stream().export(2);
+    records.forEach(exporter::export);
     batchStubFactory.stub.flushException = new RuntimeException("failed to flush");
     assertThatThrownBy(this::triggerFlushTask).isEqualTo(batchStubFactory.stub.flushException);
     batchStubFactory.stub.flushException = null;
     triggerFlushTask();
 
     // then
-    assertThat(testHarness.getLastUpdatedPosition())
+    assertThat(controller.getLastExportedRecordPosition())
         .as("position should be updated since we managed to flush after the second try")
         .isEqualTo(records.get(1).getPosition());
   }
@@ -175,15 +209,18 @@ final class KafkaExporterTest {
   @Test
   void shouldFlushBatchOnClose() throws Exception {
     // given
-    testHarness.configure(EXPORTER_ID, rawConfig);
-    testHarness.open();
-
+    exporter.configure(context);
+    exporter.open(controller);
+    final var records =
+          List.of(
+              recordFactory.generateRecord(ValueType.PROCESS_INSTANCE),
+              recordFactory.generateRecord(ValueType.JOB));
     // when
-    final var records = testHarness.stream().export(2);
-    testHarness.close();
+    records.forEach(exporter::export);
+    exporter.close();
 
     // then
-    assertThat(testHarness.getLastUpdatedPosition())
+    assertThat(controller.getLastExportedRecordPosition())
         .as("position should be updated since we managed to flush after the second try")
         .isEqualTo(records.get(1).getPosition());
     assertThat(batchStubFactory.stub.isClosed())
@@ -194,22 +231,33 @@ final class KafkaExporterTest {
   @Test
   void shouldRescheduleFlush() throws Exception {
     // given
-    testHarness.configure(EXPORTER_ID, rawConfig);
-    testHarness.open();
-
+    exporter.configure(context);
+    exporter.open(controller);
+    final var records =
+          List.of(
+              recordFactory.generateRecord(ValueType.PROCESS_INSTANCE),
+              recordFactory.generateRecord(ValueType.JOB));
     // when
     triggerFlushTask();
-    final var records = testHarness.stream().export(2);
+    records.forEach(exporter::export);
     triggerFlushTask();
 
     // then
-    assertThat(testHarness.getLastUpdatedPosition())
+    assertThat(controller.getLastExportedRecordPosition())
         .as("position should be updated after triggering the second flush task")
         .isEqualTo(records.get(1).getPosition());
   }
 
   private void triggerFlushTask() {
     mockConfigParser.parse(rawConfig);
-    testHarness.runScheduledTasks(mockConfigParser.config.getFlushInterval());
+    controller.runScheduledTasks(mockConfigParser.config.getFlushInterval());
+  }
+
+  private static Record<?> newRecord(final int partitionId, final ValueType valueType) {
+    return ImmutableRecord.builder()
+        .withPartitionId(partitionId)
+        .withValueType(valueType)
+        .withRecordType(RecordType.EVENT)
+        .build();
   }
 }

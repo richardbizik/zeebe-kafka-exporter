@@ -11,7 +11,7 @@
   <parent>
     <artifactId>zeebe-kafka-exporter-root</artifactId>
     <groupId>io.zeebe</groupId>
-    <version>3.1.1-SNAPSHOT</version>
+    <version>4.0.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
@@ -52,6 +52,16 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-exporter-test</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol-test-util</artifactId>
     </dependency>
 
     <dependency>

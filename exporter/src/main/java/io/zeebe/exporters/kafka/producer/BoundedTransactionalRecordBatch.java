@@ -61,6 +61,7 @@ final class BoundedTransactionalRecordBatch implements RecordBatch {
   private final KafkaProducerFactory producerFactory;
   private final ProducerConfig config;
   private final String producerId;
+  private final int partitionId;
   private final int maxBatchSize;
   private final LongConsumer onFlushCallback;
   private final Logger logger;
@@ -72,12 +73,14 @@ final class BoundedTransactionalRecordBatch implements RecordBatch {
 
   public BoundedTransactionalRecordBatch(
       final ProducerConfig config,
+      final int partitionId,
       final int maxBatchSize,
       final LongConsumer onFlushCallback,
       final Logger logger,
       final KafkaProducerFactory producerFactory) {
     this(
         config,
+        partitionId,
         maxBatchSize,
         onFlushCallback,
         logger,
@@ -87,12 +90,14 @@ final class BoundedTransactionalRecordBatch implements RecordBatch {
 
   public BoundedTransactionalRecordBatch(
       final ProducerConfig config,
+      final int partitionId,
       final int maxBatchSize,
       final LongConsumer onFlushCallback,
       final Logger logger,
       final KafkaProducerFactory producerFactory,
       final String producerId) {
     this.config = Objects.requireNonNull(config);
+    this.partitionId = partitionId;
     this.maxBatchSize = maxBatchSize;
     this.onFlushCallback = Objects.requireNonNull(onFlushCallback);
     this.logger = Objects.requireNonNull(logger);
@@ -212,7 +217,7 @@ final class BoundedTransactionalRecordBatch implements RecordBatch {
       return;
     }
 
-    producer = producerFactory.newProducer(config, producerId);
+    producer = producerFactory.newProducer(config, partitionId, producerId);
     logger.trace("Created new producer");
   }
 

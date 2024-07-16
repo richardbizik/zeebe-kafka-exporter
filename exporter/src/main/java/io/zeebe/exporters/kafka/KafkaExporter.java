@@ -43,6 +43,7 @@ public final class KafkaExporter implements Exporter {
   private RecordHandler recordHandler;
   private ScheduledTask flushTask;
   private RecordBatch recordBatch;
+  private int partitionId;
 
   // the constructor is used by the Zeebe broker to instantiate it
   @SuppressWarnings("unused")
@@ -60,6 +61,7 @@ public final class KafkaExporter implements Exporter {
   @Override
   public void configure(final Context context) {
     logger = Objects.requireNonNull(context.getLogger());
+    partitionId = context.getPartitionId();
 
     final var rawConfig =
         Objects.requireNonNull(context.getConfiguration().instantiate(RawConfig.class));
@@ -83,7 +85,7 @@ public final class KafkaExporter implements Exporter {
     this.controller = controller;
     recordBatch =
         recordBatchFactory.newRecordBatch(
-            config.getProducer(), config.getMaxBatchSize(), this::updatePosition, logger);
+            config.getProducer(), partitionId, config.getMaxBatchSize(), this::updatePosition, logger);
 
     scheduleFlushBatchTask();
 

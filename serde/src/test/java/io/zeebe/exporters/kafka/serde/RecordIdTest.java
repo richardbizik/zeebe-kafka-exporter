@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.cbor.databind.CBORMapper;
+import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
@@ -45,7 +46,7 @@ final class RecordIdTest {
   @Test
   void shouldSerializeOtherFormat() {
     // given
-    final ObjectMapper cborMapper = new CBORMapper();
+    final ObjectMapper cborMapper = new CBORMapper().registerModule(new ZeebeProtocolModule());
     final RecordId id = new RecordId(1, 1);
     final RecordIdSerializer serializer = new RecordIdSerializer(cborMapper);
     final RecordIdDeserializer deserializer = new RecordIdDeserializer(cborMapper);

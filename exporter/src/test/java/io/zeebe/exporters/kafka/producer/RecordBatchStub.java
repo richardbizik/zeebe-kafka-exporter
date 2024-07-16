@@ -30,6 +30,7 @@ public final class RecordBatchStub implements RecordBatch {
   public RuntimeException flushException;
 
   private final ProducerConfig config;
+  private final int partitionId;
   private final int maxBatchSize;
   private final LongConsumer onFlushCallback;
   private final Logger logger;
@@ -42,10 +43,12 @@ public final class RecordBatchStub implements RecordBatch {
 
   public RecordBatchStub(
       final ProducerConfig config,
+      final int partitionId,
       final int maxBatchSize,
       final LongConsumer onFlushCallback,
       final Logger logger) {
     this.config = Objects.requireNonNull(config);
+    this.partitionId = partitionId;
     this.maxBatchSize = maxBatchSize;
     this.onFlushCallback = Objects.requireNonNull(onFlushCallback);
     this.logger = Objects.requireNonNull(logger);
@@ -97,11 +100,12 @@ public final class RecordBatchStub implements RecordBatch {
     @Override
     public RecordBatch newRecordBatch(
         final ProducerConfig config,
+        final int partitionId,
         final int maxBatchSize,
         final LongConsumer onFlushCallback,
         final Logger logger) {
       if (stub == null) {
-        stub = new RecordBatchStub(config, maxBatchSize, onFlushCallback, logger);
+        stub = new RecordBatchStub(config, partitionId, maxBatchSize, onFlushCallback, logger);
       }
 
       return stub;
