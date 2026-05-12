@@ -29,7 +29,11 @@ import io.zeebe.exporters.kafka.producer.RecordBatchFactory;
 import io.zeebe.exporters.kafka.record.KafkaRecordFilter;
 import io.zeebe.exporters.kafka.record.RecordHandler;
 import io.zeebe.exporters.kafka.record.RecordSerializer;
+import io.zeebe.exporters.kafka.serde.RecordId;
+
 import java.util.Objects;
+
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.slf4j.Logger;
 
 /** Implementation of a Zeebe exporter producing serialized records to a given Kafka topic. */
@@ -119,7 +123,15 @@ public final class KafkaExporter implements Exporter {
       return;
     }
 
-    final var producerRecord = recordHandler.transform(record);
+    final ProducerRecord<RecordId, byte[]> producerRecord;
+    try {
+      producerRecord = recordHandler.transform(record);
+    } catch(RuntimeException e){
+      logger.warn("Skipping unserializable record key={} pos={} type={}",
+        record.getKey(), record.getPosition(), record.getValueType(), e);
+      controller.updateLastExportedRecordPosition(record.getPosition());
+      return;
+    }
     recordBatch.add(producerRecord);
     logger.trace("Added {} to the batch", producerRecord);
   }

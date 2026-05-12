@@ -14,10 +14,10 @@ zeebe:
           inFlightRecordCheckIntervalMs: 1000
 
           producer:
-            transactionIdPrefix: zeebe-0 # transaction id will be in the form of <transactionIdPrefix>-<clientId>-<producerId>-<partitionId>
+            transactionIdPrefix: zeebe-transaction # transaction id will be in the form of <transactionIdPrefix>-<clientId>-<partitionId>
+            clientId: zeebe
             requestTimeoutMs: 5000
             closeTimeoutMs: 5000
-            clientId: zeebe-0
             maxConcurrentRequests: 3
 
             config: |

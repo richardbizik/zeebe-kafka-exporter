@@ -130,4 +130,10 @@ public final class RawRecordsConfig {
   public RawRecordConfig compensationSubscription;
   public RawRecordConfig checkpoint;
 
+  public RawRecordConfig messageCorrelation;
+  public RawRecordConfig user;
+  public RawRecordConfig clock;
+  public RawRecordConfig authorization;
+  public RawRecordConfig resource;
+  public RawRecordConfig multiInstance;
 }

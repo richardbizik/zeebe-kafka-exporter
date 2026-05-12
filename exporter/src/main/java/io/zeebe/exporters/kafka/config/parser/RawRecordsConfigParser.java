@@ -151,7 +151,24 @@ public class RawRecordsConfigParser implements ConfigParser<RawRecordsConfig, Re
     Optional.ofNullable(config.checkpoint)
         .map(recordConfigParser::parse)
         .ifPresent(c -> typeMap.put(ValueType.CHECKPOINT, c));
-
+    Optional.ofNullable(config.messageCorrelation)
+        .map(recordConfigParser::parse)
+        .ifPresent(c -> typeMap.put(ValueType.MESSAGE_CORRELATION, c));
+    Optional.ofNullable(config.user)
+        .map(recordConfigParser::parse)
+        .ifPresent(c -> typeMap.put(ValueType.USER, c));
+    Optional.ofNullable(config.clock)
+        .map(recordConfigParser::parse)
+        .ifPresent(c -> typeMap.put(ValueType.CLOCK, c));
+    Optional.ofNullable(config.authorization)
+        .map(recordConfigParser::parse)
+        .ifPresent(c -> typeMap.put(ValueType.AUTHORIZATION, c));
+    Optional.ofNullable(config.resource)
+        .map(recordConfigParser::parse)
+        .ifPresent(c -> typeMap.put(ValueType.RESOURCE, c));
+    Optional.ofNullable(config.multiInstance)
+        .map(recordConfigParser::parse)
+        .ifPresent(c -> typeMap.put(ValueType.MULTI_INSTANCE, c));
 
     return new RecordsConfig(typeMap, defaults);
   }

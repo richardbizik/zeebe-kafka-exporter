@@ -450,10 +450,14 @@ zeebe:
             job: { topic: zeebe-job }
             # For records with a value of type MESSAGE
             message: { topic: zeebe-message }
+            # For records with a value of type MESSAGE_CORRELATION
+            messageCorrelation: { topic: message-correlation }
             # For records with a value of type MESSAGE_SUBSCRIPTION
             messageSubscription: { topic: zeebe-message-subscription }
             # For records with a value of type MESSAGE_START_EVENT_SUBSCRIPTION
             messageStartEventSubscription: { topic: zeebe-message-subscription-start-event }
+            # For records with a value of type MULTI_INSTANCE
+            multiInstance: { topic: multi-instance }
             # For records with a value of type PROCESS
             process: { topic: zeebe-process }
             # For records with a value of type PROCESS_EVENT
@@ -468,6 +472,26 @@ zeebe:
             timer: { topic: zeebe-timer }
             # For records with a value of type VARIABLE
             variable: { topic: zeebe-variable }
+            decision: { topic: decision}
+            decisionRequirements: { topic: decision-requirements}
+            decisionEvaluation: { topic: decision-evaluation}
+            processInstanceModification: { topic: process-instance-modification}
+            escalation: { topic: escalation}
+            signalSubscription: { topic: signal-subscription}
+            signal: { topic: signal}
+            resourceDeletion: { topic: resource-deletion}
+            commandDistribution: { topic: command-distribution}
+            processInstanceBatch: { topic: process-instance-batch}
+            messageBatch: { topic: message-batch}
+            form: { topic: form}
+            userTask: { topic: user-task}
+            processInstanceMigration: { topic: process-instance-migration}
+            compensationSubscription: { topic: compensation-subscription}
+            checkpoint: { topic: checkpoint}
+            user: { topic: user }
+            clock: { topic: clock }
+            authorization: { topic: authorization }
+            resource: { topic: resource }
 ```
 
 # Contributing

@@ -88,6 +88,12 @@ final class RawRecordsConfigParserTest {
     config.processInstanceMigration = newConfigFromType(ValueType.PROCESS_INSTANCE_MIGRATION);
     config.compensationSubscription = newConfigFromType(ValueType.COMPENSATION_SUBSCRIPTION);
     config.checkpoint = newConfigFromType(ValueType.CHECKPOINT);
+    config.messageCorrelation = newConfigFromType(ValueType.MESSAGE_CORRELATION);
+    config.user = newConfigFromType(ValueType.USER);
+    config.clock = newConfigFromType(ValueType.CLOCK);
+    config.authorization = newConfigFromType(ValueType.AUTHORIZATION);
+    config.resource = newConfigFromType(ValueType.RESOURCE);
+    config.multiInstance = newConfigFromType(ValueType.MULTI_INSTANCE);
 
     // when
     final RecordsConfig parsed = parser.parse(config);

@@ -97,10 +97,14 @@ zeebe:
             job: { topic: zeebe-job }
             # For records with a value of type MESSAGE
             message: { topic: zeebe-message }
+            # For records with a value of type MESSAGE_CORRELATION
+            messageCorrelation: { topic: message-correlation }
             # For records with a value of type MESSAGE_SUBSCRIPTION
             messageSubscription: { topic: zeebe-message-subscription }
             # For records with a value of type MESSAGE_START_EVENT_SUBSCRIPTION
             messageStartEventSubscription: { topic: zeebe-message-subscription-start-event }
+            # For records with a value of type MULTI_INSTANCE
+            multiInstance: { topic: multi-instance }
             # For records with a value of type PROCESS
             process: { topic: zeebe-process }
             # For records with a value of type PROCESS_EVENT
@@ -131,4 +135,8 @@ zeebe:
             processInstanceMigration: { topic: process-instance-migration}
             compensationSubscription: { topic: compensation-subscription}
             checkpoint: { topic: checkpoint}
+            user: { topic: user }
+            clock: { topic: clock }
+            authorization: { topic: authorization }
+            resource: { topic: resource }
 
